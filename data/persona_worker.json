@@ -19,25 +19,40 @@
       "neighborhood": "Hapjeong-dong",
       "apartment_name": "Hapjeong Riverside Apartments",
       "nearest_subway": "Hapjeong Station (Line 2, Line 6)",
-      "nearest_convenience_store": "GS25"
+      "nearest_convenience_store": "GS25",
+      "dong": "Hapjeong-dong",
+      "postal_code": "04085"
     },
     "native_language": "Korean",
     "home_language": "Korean",
-    "disambiguation": "I am Minjun Kim, a biotech CTO born in 1988, not the South Korean actor Kim Min-jun born in 1976."
+    "disambiguation": "I am Minjun Kim, a biotech CTO born in 1988, not the South Korean actor Kim Min-jun born in 1976.",
+    "mobile_carrier": "SKT",
+    "linkedin_url": null,
+    "instagram": null
   },
   "family": {
     "marital_status": "single",
     "children_count": 0,
     "household": "I live alone with one cat.",
     "parents_cohabitation": false,
-    "cat_name": "Nabi"
+    "cat_name": "Nabi",
+    "cat_adoption": {
+      "source": "a local shelter in Mapo-gu",
+      "month_year": "June 2023"
+    },
+    "cat_vet": "Hapjeong Animal Clinic"
   },
   "work": {
     "current_employer": {
       "company_name": "NeuronForge Bio",
       "industry": "biotech AI",
       "website": "https://neuronforgebio.com",
-      "ceo_name": "Dr. Jisoo Park"
+      "ceo_name": "Dr. Jisoo Park",
+      "legal_name": "NeuronForge Bio Inc.",
+      "country_of_incorporation": "South Korea",
+      "registration_number": null,
+      "founders": ["Dr. Jisoo Park", "Dr. Sanghyun Yoo"],
+      "headquarters_address": "Seongsu Bio Valley, 12 Seongsuil-ro, Seongdong-gu, Seoul"
     },
     "org_structure": {
       "job_title": "Chief Technology Officer",
@@ -52,8 +67,13 @@
     },
     "regular_meetings_summary": "a Monday leadership sync, a Wednesday product review, and a Friday engineering check-in",
     "email_domain": "neuronforgebio.com",
+    "corporate_email": "minjun.kim@neuronforgebio.com",
     "employment_start": "March 2022",
+    "start_date_exact": "March 7, 2022",
     "previous_employer": "Kakao Brain",
+    "hr_representative": null,
+    "predecessor_cto": null,
+    "github_org": null,
     "direct_reports": [
       "Soojin Lee",
       "Daniel Han",
@@ -97,6 +117,9 @@
   },
   "plans": {
     "five_year_plan": "Over the next five years, I want to build a regional biotech AI platform with strong clinical and research partnerships across Asia."
+  },
+  "finance": {
+    "bank": null
   },
   "answer_policy": {
     "preferred_language": "en",

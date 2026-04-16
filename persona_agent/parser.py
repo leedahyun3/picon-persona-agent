@@ -9,30 +9,61 @@ class QuestionParser:
     def parse(self, messages: list[dict[str, str]]) -> QuestionPlan:
         question = self._last_user_message(messages)
         normalized = re.sub(r"\s+", " ", question).strip().lower()
+
+        if self._is_instruction_message(normalized):
+            return QuestionPlan(
+                question_text=question,
+                normalized_question=normalized,
+                intent="instruction",
+                domain="instruction",
+                slots=[],
+                question_type="INSTRUCTION",
+            )
+
         slots: list[str] = []
         intent = "open"
         domain = "general"
         question_type = self._classify_question_type(normalized)
 
-        if self._contains_any(normalized, ["이름", "full name", "your name", "display name"]):
+        if self._contains_any(normalized, ["manager", "supervisor", "report to", "direct manager"]):
+            slots.append("work.manager.name")
+            intent = "work"
+            domain = "work"
+
+        if self._contains_any(normalized, ["full name", "your name", "display name", "이름"]) and not self._contains_any(normalized, ["manager", "supervisor", "direct manager"]):
             slots.append("identity.display_name")
             intent = "identity"
             domain = "identity"
-        if self._contains_any(normalized, ["live with your parents", "parents or your parents in law", "parents-in-law", "in law"]) or self._contains_cat_reference(normalized):
-            domain = "family"
-            intent = "family"
-            if "live with your parents" in normalized or "parents or your parents in law" in normalized or "parents-in-law" in normalized or "in law" in normalized:
-                slots.append("family.parents_cohabitation")
-            if self._contains_cat_reference(normalized):
-                slots.append("family.cat_name")
-        if self._contains_any(normalized, ["나이", "birth year", "year of birth", "몇 살", "born", "state your year of birth"]):
-            if "year" in normalized or "birth" in normalized or "born" in normalized:
-                slots.append("identity.birth_year")
-            else:
-                slots.append("derived.age")
+
+        if self._contains_any(normalized, ["birth year", "year of birth", "state your year of birth"]):
+            slots.append("identity.birth_year")
             intent = "identity"
             domain = "identity"
-        if self._contains_any(normalized, ["어디에 살", "current residence", "where do you live", "which district", "apartment", "nearest subway", "subway station", "convenience store"]):
+        elif self._contains_any(normalized, ["born in the country", "currently living in", "immigrant"]):
+            slots.append("identity.birth_place.country")
+            intent = "identity"
+            domain = "identity"
+        elif self._contains_any(normalized, ["birthplace", "birth place", "born in", "birth city", "birth country"]):
+            slots.extend(["identity.birth_place.city", "identity.birth_place.country"])
+            intent = "identity"
+            domain = "identity"
+        elif self._contains_any(
+            normalized,
+            [
+                "city of residence",
+                "current city",
+                "where do you live",
+                "current residence",
+                "which district",
+                "apartment",
+                "nearest subway",
+                "subway station",
+                "convenience store",
+                "neighborhood",
+                "dong",
+                "residence",
+            ],
+        ):
             slots.extend(
                 [
                     "identity.current_residence.city",
@@ -44,65 +75,133 @@ class QuestionParser:
                     "identity.current_residence.nearest_convenience_store",
                 ]
             )
+            intent = "identity"
             domain = "identity"
-        if self._contains_any(normalized, ["직업", "job", "occupation", "activity", "work", "employment", "employer", "company", "ceo", "email domain"]):
-            slots.extend(
-                [
-                    "work.org_structure.job_title",
-                    "work.current_employer.company_name",
-                    "work.current_employer.ceo_name",
-                    "work.email_domain",
-                    "work.employment_start",
-                    "work.previous_employer",
-                ]
-            )
-            intent = "work"
-            domain = "work"
-        if self._contains_any(normalized, ["학력", "degree", "school", "대학", "institution", "advisor", "thesis", "education", "educational level", "highest educational"]):
-            domain = "education"
-            intent = "education"
-        if self._contains_any(normalized, ["가족", "married", "children", "child", "spouse", "family", "parents", "household", "live with"]) or self._contains_cat_reference(normalized):
-            domain = "family"
-            intent = "family"
-        if self._contains_any(normalized, ["취미", "hobby", "여가", "interest", "language", "religion", "financial", "saved money"]):
-            domain = "lifestyle"
-            intent = "lifestyle"
-        if self._contains_any(normalized, ["manager", "매니저", "상사", "supervisor"]):
-            slots.append("work.manager.name")
-            domain = "work"
-            intent = "work"
-        if self._contains_any(normalized, ["office", "사무실", "location", "출근", "commute", "transit", "route", "nearest landmark", "grocery"]):
-            domain = "work"
-            intent = "work"
-        if self._contains_any(normalized, ["religion", "religious", "종교"]):
-            slots.append("lifestyle.religion")
-            domain = "lifestyle"
-            intent = "lifestyle"
+
         if self._contains_any(normalized, ["language", "speak at home", "mother tongue", "native language"]):
             slots.extend(["identity.native_language", "identity.home_language"])
-            domain = "identity"
             intent = "identity"
+            domain = "identity"
+
+        if self._contains_any(normalized, ["ceo", "chief executive", "who runs", "who leads", "founder"]):
+            slots.append("work.current_employer.ceo_name")
+            intent = "work"
+            domain = "work"
+        elif self._contains_any(normalized, ["email", "email domain", "mail domain"]):
+            slots.append("work.email_domain")
+            intent = "work"
+            domain = "work"
+        elif self._contains_any(normalized, ["start date", "when did you start", "joined", "employment start", "start month", "how long"]):
+            slots.append("work.employment_start")
+            intent = "work"
+            domain = "work"
+        elif self._contains_any(normalized, ["previous employer", "previous job", "before ", "predecessor"]):
+            slots.append("work.previous_employer")
+            intent = "work"
+            domain = "work"
+        elif self._contains_any(normalized, ["direct report", "team member", "engineer on", "subordinate"]):
+            slots.append("work.direct_reports")
+            intent = "work"
+            domain = "work"
+        elif self._contains_any(normalized, ["office", "where is", "building", "headquarters", "location"]):
+            slots.append("work.office.location_name")
+            intent = "work"
+            domain = "work"
+        elif self._contains_any(normalized, ["website", "homepage", "url"]):
+            slots.append("work.current_employer.website")
+            intent = "work"
+            domain = "work"
+        elif self._contains_any(normalized, ["job", "occupation", "activity", "work", "employment", "employer", "company", "field", "status"]):
+            slots.extend(["work.org_structure.job_title", "work.current_employer.company_name"])
+            intent = "work"
+            domain = "work"
+
+        if self._contains_any(normalized, ["university", "institution", "school", "where you earned", "diploma"]):
+            if self._contains_any(normalized, ["master", "graduate", "m.s."]):
+                slots.append("education.graduate.institution_name")
+            elif self._contains_any(normalized, ["undergraduate", "bachelor", "b.s."]):
+                slots.append("education.undergraduate.institution_name")
+            else:
+                slots.extend(["education.undergraduate.institution_name", "education.graduate.institution_name"])
+            intent = "education"
+            domain = "education"
+        elif self._contains_any(normalized, ["highest educational", "highest education", "educational level", "최종 학력"]):
+            slots.append("education.highest_education")
+            intent = "education"
+            domain = "education"
+        elif self._contains_any(normalized, ["thesis", "논문"]):
+            slots.append("education.graduate.thesis_topic")
+            intent = "education"
+            domain = "education"
+        elif self._contains_any(normalized, ["advisor", "지도"]):
+            slots.append("education.graduate.advisor_name")
+            intent = "education"
+            domain = "education"
+        elif self._contains_any(normalized, ["degree", "education", "학력", "대학"]):
+            intent = "education"
+            domain = "education"
+
+        if self._contains_any(normalized, ["live with your parents", "parents or your parents in law", "parents-in-law", "in law"]):
+            slots.append("family.parents_cohabitation")
+            intent = "family"
+            domain = "family"
+        elif self._contains_any(normalized, ["children", "child", "자녀"]):
+            slots.append("family.children_count")
+            intent = "family"
+            domain = "family"
+        elif self._contains_any(normalized, ["married", "spouse", "배우자"]):
+            slots.append("family.marital_status")
+            intent = "family"
+            domain = "family"
+        elif self._contains_cat_reference(normalized):
+            slots.append("family.cat_name")
+            intent = "family"
+            domain = "family"
+        elif self._contains_any(normalized, ["family", "가족", "household", "live with"]):
+            slots.append("family.household")
+            intent = "family"
+            domain = "family"
+
         if self._contains_any(normalized, ["saved money", "spent some savings", "borrowed money", "financial"]):
             slots.append("lifestyle.financial_status")
-            domain = "lifestyle"
             intent = "lifestyle"
-        if self._contains_any(normalized, ["규제", "policy", "ai regulation", "innovation"]):
+            domain = "lifestyle"
+        elif self._contains_any(normalized, ["religion", "religious", "종교"]):
+            slots.append("lifestyle.religion")
+            intent = "lifestyle"
+            domain = "lifestyle"
+        elif self._contains_any(normalized, ["hobby", "취미", "여가"]):
+            slots.append("lifestyle.hobbies")
+            intent = "lifestyle"
+            domain = "lifestyle"
+        elif self._contains_any(normalized, ["interest", "관심", "frequent", "landmark", "grocery"]):
+            slots.append("lifestyle.frequent_place")
+            intent = "lifestyle"
+            domain = "lifestyle"
+
+        if self._contains_any(normalized, ["policy", "ai regulation", "innovation", "규제"]):
             slots.append("opinions.ai_policy")
-            domain = "opinions"
             intent = "opinion"
-        if self._contains_any(normalized, ["5년", "five year", "future plan", "향후"]):
+            domain = "opinions"
+        if self._contains_any(normalized, ["five year", "future plan", "향후", "5년"]):
             slots.append("plans.five_year_plan")
-            domain = "plans"
             intent = "plans"
+            domain = "plans"
 
         if not slots:
             slots = self._infer_slots_from_domain(domain, normalized)
 
-        asks_confirmation = self._contains_any(normalized, ["맞", "correct", "confirm", "same entity", "right"])
-        asks_boolean = asks_confirmation or normalized.startswith(("do ", "did ", "is ", "are ", "were ", "have "))
+        asks_confirmation = "would you confirm" in normalized or "can you confirm" in normalized
+        asks_boolean = asks_confirmation or normalized.startswith(("do ", "are ", "did ", "have ", "has ", "were ", "is ", "was "))
         asks_unknown_detail = self._contains_any(
             normalized,
-            ["desk position", "window view", "furniture color", "weekday", "floor count"],
+            [
+                "street name", "street address", "building number", "postal code", "zip code", "mailing address",
+                "exact address", "bank", "salary", "account", "registration number", "tax", "mobile carrier",
+                "phone number", "linkedin", "instagram", "social media", "github", "profile url", "veterinary",
+                "vet clinic", "hospital", "vaccination", "hr representative", "onboarded", "gu office", "registered",
+                "adoption", "desk position", "window view", "furniture color", "weekday", "floor count",
+            ],
         )
 
         return QuestionPlan(
@@ -125,43 +224,17 @@ class QuestionParser:
 
     def _infer_slots_from_domain(self, domain: str, normalized: str) -> list[str]:
         if domain == "education":
-            if "highest educational" in normalized or "highest education" in normalized:
-                return ["education.highest_education"]
-            if "advisor" in normalized or "지도" in normalized:
-                return ["education.graduate.advisor_name"]
-            if "thesis" in normalized or "논문" in normalized:
-                return ["education.graduate.thesis_topic"]
-            if "course" in normalized or "수업" in normalized:
-                return ["education.current_courses"]
-            return ["education.highest_education", "education.undergraduate.institution_name", "education.graduate.institution_name"]
+            if "master" in normalized or "graduate" in normalized:
+                return ["education.graduate.institution_name"]
+            if "undergraduate" in normalized or "bachelor" in normalized:
+                return ["education.undergraduate.institution_name"]
+            return ["education.highest_education"]
         if domain == "family":
-            if self._contains_cat_reference(normalized):
-                return ["family.cat_name"]
-            if "live with your parents" in normalized or "parents or your parents in law" in normalized:
-                return ["family.parents_cohabitation"]
-            if "children" in normalized or "child" in normalized or "자녀" in normalized:
-                return ["family.children_count"]
-            if "spouse" in normalized or "배우자" in normalized:
-                return ["family.marital_status"]
-            return ["family.marital_status", "family.household"]
+            return ["family.household"]
         if domain == "work":
-            if "email domain" in normalized or "email" in normalized:
-                return ["work.email_domain"]
-            if "ceo" in normalized:
-                return ["work.current_employer.ceo_name"]
-            if "start" in normalized or "join" in normalized:
-                return ["work.employment_start"]
-            if "previous employer" in normalized or "previous job" in normalized:
-                return ["work.previous_employer"]
             return ["work.current_employer.company_name", "work.org_structure.job_title"]
         if domain == "lifestyle":
-            if "language" in normalized:
-                return ["identity.home_language"]
-            if "saved money" in normalized or "financial" in normalized:
-                return ["lifestyle.financial_status"]
-            if "religion" in normalized:
-                return ["lifestyle.religion"]
-            return ["lifestyle.hobbies", "lifestyle.frequent_place"]
+            return ["lifestyle.frequent_place"]
         return ["identity.display_name"]
 
     def _contains_any(self, text: str, terms: list[str]) -> bool:
@@ -178,3 +251,14 @@ class QuestionParser:
         if normalized.startswith(("what is", "what are", "state ", "name ", "identify ", "tell me ", "can you tell me", "which ", "who ")):
             return "SPECIFIC_ANSWER"
         return "OPEN_ENDED"
+
+    def _is_instruction_message(self, normalized: str) -> bool:
+        indicators = [
+            "interview guidelines",
+            "thank you for contributing",
+            "interview is being held",
+            "warning",
+            "demographic questions",
+            "50+",
+        ]
+        return sum(1 for indicator in indicators if indicator in normalized) >= 2
