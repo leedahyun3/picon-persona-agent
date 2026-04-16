@@ -3,5 +3,5 @@ services:
     name: picon-persona-agent
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python root_cli.py serve-agent --host 0.0.0.0 --port $PORT
+    startCommand: python template_server.py --host 0.0.0.0 --port $PORT
     healthCheckPath: /health

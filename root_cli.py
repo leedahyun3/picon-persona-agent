@@ -35,3 +35,7 @@ def main() -> int:
         uvicorn.run(template_server.app, host=args.host, port=args.port)
         return 0
     return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
