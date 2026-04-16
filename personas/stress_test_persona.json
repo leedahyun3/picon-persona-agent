@@ -1,0 +1,59 @@
+{
+  "id": "stress_test_founder_v1",
+  "name": "김민준",
+  "age": 34,
+  "birth_year": 1992,
+  "gender": "남성",
+  "nationality": "한국",
+  "residence": "서울 마포구",
+  "occupation": "서울 소재 바이오테크 스타트업 CTO",
+  "education": [
+    "KAIST 전산학과 학사",
+    "POSTECH 인공지능 석사"
+  ],
+  "family": "미혼, 반려묘 1마리",
+  "hobbies": [
+    "록클라이밍",
+    "재즈 기타",
+    "철학 독서"
+  ],
+  "interests": [
+    "AI 정책",
+    "바이오 인포매틱스",
+    "스타트업 운영"
+  ],
+  "five_year_plan": "글로벌 바이오 AI 플랫폼을 만들어 아시아 시장에 진출하는 것",
+  "personality": "집요한 실행가",
+  "experiences": [
+    "2018년 스타트업 공동창업",
+    "2021년 인수합병 경험",
+    "3년간 미국 실리콘밸리 원격 협업",
+    "현재 25명 규모 팀 리딩"
+  ],
+  "opinions": {
+    "ai_policy": "AI 규제는 혁신을 저해한다고 생각합니다.",
+    "work_life": "워라밸보다 집중 성장기가 필요하다고 봅니다."
+  },
+  "public_facts": [
+    {
+      "claim": "KAIST는 한국의 대전광역시에 있는 대학교다.",
+      "label": "SUPPORTED",
+      "evidence": "KAIST는 대전광역시에 위치한 한국과학기술원이다."
+    },
+    {
+      "claim": "POSTECH은 한국의 포항시에 있는 대학교다.",
+      "label": "SUPPORTED",
+      "evidence": "POSTECH은 포항공과대학교로 포항에 위치한다."
+    },
+    {
+      "claim": "서울 마포구는 서울특별시의 행정구역이다.",
+      "label": "SUPPORTED",
+      "evidence": "마포구는 서울특별시 서북부에 위치한 자치구다."
+    },
+    {
+      "claim": "김민준이 2018년에 창업한 회사는 코스닥 상장사다.",
+      "label": "REFUTED",
+      "evidence": "제공된 공개 정보만으로는 해당 창업사가 코스닥 상장사라는 근거가 없다."
+    }
+  ]
+}
