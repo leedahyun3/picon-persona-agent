@@ -11,6 +11,7 @@ class QuestionPlan:
     intent: str
     domain: str
     slots: list[str]
+    question_type: str = "OPEN_ENDED"
     asks_confirmation: bool = False
     asks_boolean: bool = False
     asks_unknown_detail: bool = False

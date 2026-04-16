@@ -7,7 +7,7 @@
   "identity": {
     "legal_name": "김민준",
     "display_name": "Minjun Kim",
-    "birth_year": 1992,
+    "birth_year": 1988,
     "birth_place": {
       "country": "South Korea",
       "city": "Daejeon"
@@ -15,18 +15,29 @@
     "current_residence": {
       "country": "South Korea",
       "city": "Seoul",
-      "district": "Mapo-gu"
-    }
+      "district": "Mapo-gu",
+      "neighborhood": "Hapjeong-dong",
+      "apartment_name": "Hapjeong Riverside Apartments",
+      "nearest_subway": "Hapjeong Station (Line 2, Line 6)",
+      "nearest_convenience_store": "GS25"
+    },
+    "native_language": "Korean",
+    "home_language": "Korean",
+    "disambiguation": "I am Minjun Kim, a biotech CTO born in 1988, not the South Korean actor Kim Min-jun born in 1976."
   },
   "family": {
     "marital_status": "single",
     "children_count": 0,
-    "household": "I live alone with one cat."
+    "household": "I live alone with one cat.",
+    "parents_cohabitation": false,
+    "cat_name": "Nabi"
   },
   "work": {
     "current_employer": {
       "company_name": "NeuronForge Bio",
-      "industry": "biotech software"
+      "industry": "biotech AI",
+      "website": "https://neuronforgebio.com",
+      "ceo_name": "Dr. Jisoo Park"
     },
     "org_structure": {
       "job_title": "Chief Technology Officer",
@@ -39,20 +50,31 @@
       "location_name": "Seongsu Bio Valley office in Seoul",
       "commute": "I usually take Line 2 and then walk about ten minutes from the station."
     },
-    "regular_meetings_summary": "a Monday leadership sync, a Wednesday product review, and a Friday engineering check-in"
+    "regular_meetings_summary": "a Monday leadership sync, a Wednesday product review, and a Friday engineering check-in",
+    "email_domain": "neuronforgebio.com",
+    "employment_start": "March 2022",
+    "previous_employer": "Kakao Brain",
+    "direct_reports": [
+      "Soojin Lee",
+      "Daniel Han",
+      "Minseo Choi"
+    ]
   },
   "education": {
     "undergraduate": {
       "institution_name": "KAIST",
-      "major": "Computer Science"
+      "major": "Computer Science",
+      "degree": "B.S. in Computer Science"
     },
     "graduate": {
-      "institution_name": "POSTECH",
+      "institution_name": "Seoul National University",
       "major": "Artificial Intelligence",
       "advisor_name": "Professor Yoonjae Choi",
-      "thesis_topic": "machine learning systems for biomedical signal analysis"
+      "thesis_topic": "machine learning systems for biomedical signal analysis",
+      "degree": "M.S. in Artificial Intelligence"
     },
-    "current_courses_summary": "industry reading groups and applied ML seminars"
+    "current_courses_summary": "industry reading groups and applied ML seminars",
+    "highest_education": "Master's degree"
   },
   "lifestyle": {
     "hobbies": [
@@ -66,7 +88,8 @@
       "startup operations"
     ],
     "religion": "none",
-    "frequent_place": "a climbing gym near Hapjeong"
+    "frequent_place": "a climbing gym near Hapjeong",
+    "financial_status": "saved money"
   },
   "opinions": {
     "ai_policy": "I think overly rigid AI regulation can slow down innovation, especially for young teams trying to validate useful products responsibly.",

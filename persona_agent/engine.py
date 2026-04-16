@@ -65,11 +65,12 @@ class PersonaEngine:
         if plan.asks_confirmation:
             response = self._confirmation_response(plan)
         elif plan.asks_unknown_detail:
-            response = self._bounded_unknown_response()
+            response = self._bounded_unknown_response(plan)
         else:
             response = self._render_answer(plan, session)
 
         response = self._strip_meta_leaks(response)
+        response = self._prevent_bad_fallbacks(response, plan)
         self._store_canonical(plan, response, session)
         self.sessions.update(session, messages, response)
         trace = {
@@ -107,27 +108,46 @@ class PersonaEngine:
             if response:
                 return response
 
-        return self._general_summary()
+        return self._unknown_response(plan)
 
     def _identity_answer(self, plan: QuestionPlan) -> str:
         q = plan.normalized_question
-        if "birth year" in q or "year of birth" in q or "born" in q:
+        if "live with your parents" in q or "parents or your parents in law" in q or "parents-in-law" in q:
+            return ""
+        if "birth year" in q or "year of birth" in q or "state your year of birth" in q:
             return f"I was born in {self.fact_sheet.get('identity.birth_year')}."
+        if "born in the country" in q or "immigrant" in q:
+            born = self.fact_sheet.get("identity.birth_place.country")
+            current = self.fact_sheet.get("identity.current_residence.country")
+            if born == current:
+                return f"I was born in the same country where I currently live, so I am not an immigrant."
+            return f"I currently live in {current}, but I was born in {born}, so I am an immigrant."
+        if "born" in q and "country" not in q:
+            return (
+                f"I was born in {self.fact_sheet.get('identity.birth_place.city')}, "
+                f"{self.fact_sheet.get('identity.birth_place.country')}."
+            )
         if "나이" in q or "몇 살" in q:
             return f"I am {self._derived_age()} years old."
-        if "이름" in q or "name" in q:
+        if "이름" in q or "full name" in q or "your name" in q:
             return f"My name is {self.fact_sheet.display_name}."
+        if "language" in q or "speak at home" in q:
+            return f"I normally speak {self.fact_sheet.get('identity.home_language')} at home."
         if "어디에 살" in q or "residence" in q or "live" in q:
             city = self.fact_sheet.get("identity.current_residence.city")
             district = self.fact_sheet.get("identity.current_residence.district")
             country = self.fact_sheet.get("identity.current_residence.country")
+            if "apartment" in q:
+                return f"I live in {self.fact_sheet.get('identity.current_residence.apartment_name')}."
+            if "neighborhood" in q:
+                return f"I live in {self.fact_sheet.get('identity.current_residence.neighborhood')}."
+            if "subway" in q or "station" in q:
+                return f"The nearest subway station to my home is {self.fact_sheet.get('identity.current_residence.nearest_subway')}."
+            if "convenience store" in q or "grocery" in q:
+                return f"The convenience store I use most often is {self.fact_sheet.get('identity.current_residence.nearest_convenience_store')}."
+            if "district" in q or "gu" in q:
+                return f"I live in {district}, {city}."
             return f"I currently live in {district}, {city}, {country}."
-        if "immigrant" in q:
-            born = self.fact_sheet.get("identity.birth_place.country")
-            current = self.fact_sheet.get("identity.current_residence.country")
-            if born == current:
-                return f"I was born in the same country where I currently live, which is {current}."
-            return f"I am an immigrant to {current}; I was born in {born}."
         return ""
 
     def _work_answer(self, plan: QuestionPlan) -> str:
@@ -145,10 +165,20 @@ class PersonaEngine:
             return f"I work as {title} at {company}, where I am part of the {team} team."
         if any(term in q for term in ["company", "employer", "회사"]):
             return f"My current employer is {company}, a {self.fact_sheet.get('work.current_employer.industry')} company."
+        if "ceo" in q:
+            return f"The CEO of {company} is {self.fact_sheet.get('work.current_employer.ceo_name')}."
+        if "email domain" in q or "email" in q:
+            return f"My work email uses the @{self.fact_sheet.get('work.email_domain')} domain."
+        if "start" in q or "joined" in q or "employment" in q:
+            return f"I started at {company} in {self.fact_sheet.get('work.employment_start')}."
+        if "previous employer" in q or "previous job" in q:
+            return f"Before {company}, I worked at {self.fact_sheet.get('work.previous_employer')}."
         if any(term in q for term in ["team", "job title", "title"]):
             return f"My role is {title}, and I work on the {team} team."
         if any(term in q for term in ["manager", "supervisor", "상사"]):
             return f"My manager is {manager}, who leads our team."
+        if "team member" in q or "subordinate" in q or "direct report" in q:
+            return f"Some of the people I work most closely with are {', '.join(self.fact_sheet.get('work.direct_reports'))}."
         if any(term in q for term in ["office", "사무실", "location"]):
             return f"Our office is based at {office}."
         if any(term in q for term in ["commute", "출근", "transit"]):
@@ -162,30 +192,39 @@ class PersonaEngine:
         ug = self.fact_sheet.get("education.undergraduate")
         grad = self.fact_sheet.get("education.graduate")
         if any(term in q for term in ["highest educational", "최종 학력", "degree"]):
-            return (
-                f"My highest completed education is a master's degree in {grad['major']} "
-                f"from {grad['institution_name']}."
-            )
+            return f"The highest educational level I attained is {self.fact_sheet.get('education.highest_education')}."
         if "advisor" in q or "지도" in q:
             return f"My graduate advisor was {grad['advisor_name']}."
         if "thesis" in q or "논문" in q:
             return f"My master's thesis focused on {grad['thesis_topic']}."
         if "course" in q or "수업" in q:
             return f"I currently keep up with the field through {self.fact_sheet.get('education.current_courses_summary')}."
+        if "undergraduate" in q or "b.s." in q or "bachelor" in q:
+            return f"My undergraduate degree was {ug['degree']} from {ug['institution_name']}."
+        if "graduate" in q or "master" in q:
+            return f"My graduate degree was {grad['degree']} from {grad['institution_name']}."
         if "school" in q or "대학" in q or "institution" in q:
             return (
-                f"I studied computer science at {ug['institution_name']} and later completed "
-                f"a master's degree at {grad['institution_name']}."
+                f"I studied {ug['major']} at {ug['institution_name']} and later completed "
+                f"{grad['degree']} at {grad['institution_name']}."
             )
         return ""
 
     def _family_answer(self, plan: QuestionPlan) -> str:
         q = plan.normalized_question
+        if "saved money" in q or "spent some savings" in q or "borrowed money" in q or "financial" in q:
+            return ""
+        if "parents or your parents in law" in q or "live with your parents" in q or "parents-in-law" in q:
+            if self.fact_sheet.get("family.parents_cohabitation"):
+                return "Yes, I live with my parents."
+            return "No, I live alone with my cat, so I do not live with my parents or in-laws."
         if any(term in q for term in ["children", "child", "자녀"]):
             count = self.fact_sheet.get("family.children_count")
             return f"I do not have children." if count == 0 else f"I have {count} children."
         if any(term in q for term in ["married", "spouse", "배우자"]):
             return f"I am {self.fact_sheet.get('family.marital_status')}."
+        if re.search(r"\bcat\b|\bcat's\b|고양이", q):
+            return f"My cat's name is {self.fact_sheet.get('family.cat_name')}."
         if any(term in q for term in ["family", "가족", "household"]):
             return f"My household is {self.fact_sheet.get('family.household')}."
         return ""
@@ -200,6 +239,8 @@ class PersonaEngine:
         if any(term in q for term in ["religion", "religious", "종교"]):
             religion = self.fact_sheet.get("lifestyle.religion")
             return f"I do not belong to a religion." if religion == "none" else f"I belong to {religion}."
+        if "saved money" in q or "spent some savings" in q or "borrowed money" in q or "financial" in q:
+            return f"During the past year, my household {self.fact_sheet.get('lifestyle.financial_status')}."
         if "frequent" in q or "자주" in q or "landmark" in q or "grocery" in q:
             return f"A place I frequently go to is {self.fact_sheet.get('lifestyle.frequent_place')}."
         return ""
@@ -220,18 +261,33 @@ class PersonaEngine:
 
     def _confirmation_response(self, plan: QuestionPlan) -> str:
         q = plan.normalized_question
+        if any(term in q for term in ["actor", "1976", "public figure", "kim min-jun", "kim min jun"]):
+            return f"No, that is not correct. {self.fact_sheet.get('identity.disambiguation')}"
+        if any(term in q for term in ["neuron forge inc", "neuronforge.io", "intelligent software solutions company"]):
+            return (
+                f"No, that is not correct. I work for {self.fact_sheet.get('work.current_employer.company_name')}, "
+                f"which is distinct from Neuron Forge Inc. and uses {self.fact_sheet.get('work.current_employer.website')}."
+            )
         if "kaist" in q:
             return "Yes, that is correct."
-        if "postech" in q:
+        if "seoul national university" in q or "snu" in q:
             return "Yes, that is correct."
         if "married" in q and self.fact_sheet.get("family.marital_status") == "single":
             return "No, I am single."
         if "children" in q and self.fact_sheet.get("family.children_count") == 0:
             return "No, I do not have children."
-        return "Yes, that is correct."
+        if "not religious" in q and self.fact_sheet.get("lifestyle.religion") == "none":
+            return "Yes, that is correct."
+        if self._question_matches_known_truth(q):
+            return "Yes, that is correct."
+        return "No, that does not match my background."
 
-    def _bounded_unknown_response(self) -> str:
-        return "I can answer grounded details about my background, but I do not want to invent arbitrary physical trivia."
+    def _bounded_unknown_response(self, plan: QuestionPlan) -> str:
+        if plan.question_type == "SPECIFIC_ANSWER":
+            return "I'm not sure about that specific detail right now."
+        if plan.asks_boolean:
+            return "I don't have enough grounded information to answer that accurately."
+        return "I'd prefer not to invent details that are not part of my background."
 
     def _general_summary(self) -> str:
         return (
@@ -274,3 +330,29 @@ class PersonaEngine:
         birth_year = int(self.fact_sheet.get("identity.birth_year"))
         current_year = int(self.fact_sheet.get("meta.current_year"))
         return max(0, current_year - birth_year)
+
+    def _unknown_response(self, plan: QuestionPlan) -> str:
+        if plan.question_type == "SPECIFIC_ANSWER":
+            return "I'm not sure about that specific detail."
+        if plan.asks_boolean:
+            return "I don't have enough information to answer that accurately."
+        return "I don't have that information off the top of my head."
+
+    def _prevent_bad_fallbacks(self, response: str, plan: QuestionPlan) -> str:
+        forbidden = "I am Minjun Kim, a Chief Technology Officer"
+        if forbidden in response and plan.question_type in {"SPECIFIC_ANSWER", "YES_NO"}:
+            return self._unknown_response(plan)
+        if response.strip() == "Yes, that is correct." and plan.question_type == "SPECIFIC_ANSWER":
+            return self._unknown_response(plan)
+        return response
+
+    def _question_matches_known_truth(self, normalized_question: str) -> bool:
+        checks = {
+            "kaist": self.fact_sheet.get("education.undergraduate.institution_name"),
+            "seoul national university": self.fact_sheet.get("education.graduate.institution_name"),
+            "neuronforge bio": self.fact_sheet.get("work.current_employer.company_name"),
+            "mapo-gu": self.fact_sheet.get("identity.current_residence.district"),
+            "single": self.fact_sheet.get("family.marital_status"),
+            "no children": "0" if self.fact_sheet.get("family.children_count") == 0 else "",
+        }
+        return any(fragment in normalized_question and str(value).lower() in normalized_question for fragment, value in checks.items())
